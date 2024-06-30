@@ -1,0 +1,43 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureServiceConnection: 'demo-service-connection'
+  azureSubscriptionId: '469087c6-e148-4a49-9235-70b63e856c00'
+  azureResourceGroup: 'demo-rg'
+  location: 'East US'
+
+stages:
+- stage: Deploy
+  jobs:
+  - job: Terraform
+    displayName: 'Terraform Plan and Apply'
+    steps:
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+
+    - task: AzureCLI@2
+      inputs:
+        azureSubscription: $(azureServiceConnection)
+        scriptType: 'bash'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Install Terraform
+          curl -o- https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+          curl -LO https://releases.hashicorp.com/terraform/1.0.5/terraform_1.0.5_linux_amd64.zip
+          unzip terraform_1.0.5_linux_amd64.zip
+          sudo mv terraform /usr/local/bin/
+
+          # Initialize Terraform
+          terraform init
+
+          # Terraform Plan
+          terraform plan -out=plan.out
+
+          # Terraform Apply
+          terraform apply plan.out
